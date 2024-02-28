@@ -16,7 +16,7 @@
     overlays.default = (final: prev:
       let
         buildInputs = with prev; [
-          clang
+          clang_16
           python3
         ];
         nativeBuildInputs = with prev; [
@@ -24,11 +24,12 @@
           cmake
           ninja
        ];
-      in {
+      in rec {
         jakt = final.callPackage ./jakt.nix {
           inherit gitignoreSource;
           inherit buildInputs nativeBuildInputs;
         };
+        jakt-unwrapped = jakt.unwrapped;
       }
     );
 
