@@ -1,30 +1,39 @@
-{ lib
-, stdenv
-, makeWrapper
-, buildInputs
-, nativeBuildInputs
-, gitignoreSource
-, clang_16
-, callPackage
-, symlinkJoin
-}: let
-  jakt-unwrapped = callPackage ./jakt-unwrapped.nix {
-    inherit buildInputs nativeBuildInputs gitignoreSource;
-  };
-in
+{
+  stdenv,
+  fetchFromGitHub,
 
-symlinkJoin {
-  name = "jakt";
-  paths = [ jakt-unwrapped ];
+  clang_16,
+  cmake,
+  ninja,
+  pkg-config,
+  python3,
+}:
+
+let
+  serenity = fetchFromGitHub {
+    owner = "serenityos";
+    repo = "serenity";
+    rev = "05e78dabdbceea46bae7dca52b63dc0a115e7b52"; # latest at the time
+    hash = "sha256-ymXQ68Uib1xP4eGPuxm3vRgAIhrVK4rmHdGLfuvsOJU=";
+  };
+in stdenv.mkDerivation {
+  name = "jakt-unwrapped";
+  src = ./.;
+
   nativeBuildInputs = [
-    makeWrapper
-    jakt-unwrapped
+    pkg-config
+    cmake
+    ninja
+ ];
+
+  buildInputs = [
+    clang_16
+    python3
   ];
-  postBuild = ''
-    wrapProgram $out/bin/jakt_stage0 \
-      --prefix PATH : ${clang_16}/bin
-    wrapProgram $out/bin/jakt_stage1 \
-      --prefix PATH : ${clang_16}/bin
-  '';
-  passthru.unwrapped = jakt-unwrapped;
+
+  cmakeFlags = [
+    "-DCMAKE_CXX_COMPILER=${clang_16}/bin/clang++"
+    "-DSERENITY_SOURCE_DIR=${serenity}"
+    "-DCMAKE_INSTALL_BINDIR=bin"
+  ];
 }
